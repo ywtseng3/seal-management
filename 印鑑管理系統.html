@@ -150,7 +150,6 @@ tr:hover td{background:#fafafa}
 
 <div class="header">
   <h1>🔏 印鑑管理系統</h1>
-  <button class="settings-btn" onclick="openSettings()">⚙️ 設定 Token</button>
 </div>
 
 <div class="tabs">
@@ -161,15 +160,6 @@ tr:hover td{background:#fafafa}
 </div>
 
 <div class="content">
-
-  <!-- CORS 提示 -->
-  <div class="cors-warn" id="cors-warn">
-    <strong>⚠️ 無法連線到 Notion API</strong><br>
-    如果你是直接用瀏覽器開啟 HTML 檔案（<code>file://</code>），請改用本機伺服器開啟：<br>
-    1. 打開終端機，切換到這個 HTML 所在的資料夾<br>
-    2. 執行：<code>python3 -m http.server 8080</code><br>
-    3. 在瀏覽器開啟：<code>http://localhost:8080/印鑑管理系統.html</code>
-  </div>
 
   <!-- 總覽 -->
   <div class="section active" id="section-overview">
@@ -264,35 +254,13 @@ tr:hover td{background:#fafafa}
 
 </div>
 
-<!-- Settings Modal -->
-<div class="overlay" id="settings-overlay">
-  <div class="modal">
-    <h2>⚙️ 設定 Notion Token</h2>
-    <p class="modal-desc">輸入你的 Notion Internal Integration Token，Token 僅存在瀏覽器本機，不會外傳。</p>
-    <div class="modal-hint">
-      <strong>如何取得 Token：</strong><br>
-      1. 開啟 <code>notion.so/my-integrations</code><br>
-      2. 點「+ 新增整合」→ 建立後複製 Secret<br>
-      3. 到 Notion 印鑑管理頁面，右上角「…」→「連結」→ 加入此整合
-    </div>
-    <div class="form-group">
-      <label>Integration Token</label>
-      <input type="password" id="token-input" placeholder="secret_xxxxxxxxxxxxxxx" autocomplete="off">
-    </div>
-    <div class="modal-actions">
-      <button class="btn-cancel" onclick="closeSettings()">取消</button>
-      <button class="btn-save" onclick="saveToken()">儲存並連線</button>
-    </div>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const API = 'https://api.notion.com/v1';
+const API = 'https://notion-proxy.wendy-tyw.workers.dev/v1';
 const DB_SEALS = '6cf3560fb1d0446893c6b9e61ba5df52';
 const DB_LOG   = '0fa20e12642c4e12a9c17d100c10caa9';
-const VER = '2022-06-28';
 
 // Notion SELECT options for 保管人
 const HOLDER_OPTIONS = ['藝婷','溫蒂','X','連','Ｘ','凱莉','郭佑','Leona'];
@@ -302,12 +270,9 @@ let currentFilter = '';
 let toastTimer;
 
 // ── Helpers ──────────────────────────────────────────────────
-function token() { return localStorage.getItem('notion_token') || ''; }
-
 function hdrs() {
   return {
-    'Authorization': `Bearer ${token()}`,
-    'Notion-Version': VER,
+    'Notion-Version': '2022-06-28',
     'Content-Type': 'application/json',
   };
 }
@@ -428,10 +393,8 @@ function renderCards() {
 }
 
 async function loadSeals() {
-  if (!token()) { openSettings(); return; }
   document.getElementById('cards-container').innerHTML =
     '<div class="state-box"><div class="spinner"></div><div class="empty-text">載入中…</div></div>';
-  document.getElementById('cors-warn').classList.remove('show');
 
   try {
     const data = await queryDB(DB_SEALS, null, [{ property: '公司別', direction: 'ascending' }]);
@@ -460,10 +423,8 @@ async function loadSeals() {
 
     renderCards();
   } catch (e) {
-    const isCors = e.message.includes('Failed to fetch') || e.message.includes('NetworkError');
-    if (isCors) document.getElementById('cors-warn').classList.add('show');
     document.getElementById('cards-container').innerHTML =
-      `<div class="state-box"><div class="state-icon">⚠️</div><div class="empty-text">${isCors ? '網路連線失敗（見上方提示）' : e.message}</div></div>`;
+      `<div class="state-box"><div class="state-icon">⚠️</div><div class="empty-text">${e.message}</div></div>`;
     toast('載入失敗：' + e.message, 'error');
   }
 }
@@ -591,23 +552,6 @@ async function loadHistory() {
   }
 }
 
-// ── Settings ──────────────────────────────────────────────────
-function openSettings() {
-  document.getElementById('token-input').value = token();
-  document.getElementById('settings-overlay').classList.add('show');
-}
-function closeSettings() {
-  document.getElementById('settings-overlay').classList.remove('show');
-}
-function saveToken() {
-  const t = document.getElementById('token-input').value.trim();
-  if (!t) { toast('請輸入 Token', 'error'); return; }
-  localStorage.setItem('notion_token', t);
-  closeSettings();
-  toast('Token 已儲存，連線中…', 'info');
-  loadSeals();
-}
-
 // ── Password Gate ─────────────────────────────────────────────
 const PW = 'Passmiraclex';
 
@@ -628,11 +572,7 @@ function checkPw() {
 function initApp() {
   document.getElementById('borrow-date').value = today();
   document.getElementById('return-date').value = today();
-  if (!token()) {
-    setTimeout(openSettings, 400);
-  } else {
-    loadSeals();
-  }
+  loadSeals();
 }
 
 if (sessionStorage.getItem('mx_auth') === '1') {
