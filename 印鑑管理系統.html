@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔏 印鑑管理系統</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --primary:#1a1a2e;--accent:#e94560;--bg:#f4f5f7;--card:#fff;
+  --text:#333;--muted:#888;--border:#e0e0e0;
+  --green:#27ae60;--orange:#e67e22;--red:#e53935;
+}
+body{font-family:'PingFang TC','Microsoft JhengHei',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* Header */
+.header{background:var(--primary);color:#fff;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+.header h1{font-size:18px;letter-spacing:1px}
+.settings-btn{background:none;border:1px solid rgba(255,255,255,0.35);color:#fff;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-family:inherit;transition:background 0.2s}
+.settings-btn:hover{background:rgba(255,255,255,0.1)}
+
+/* Tabs */
+.tabs{background:#fff;border-bottom:1px solid var(--border);display:flex;padding:0 20px;overflow-x:auto}
+.tab{padding:14px 18px;cursor:pointer;font-size:14px;color:var(--muted);border-bottom:2px solid transparent;white-space:nowrap;transition:all 0.2s;user-select:none}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* Content */
+.content{max-width:1100px;margin:0 auto;padding:24px 20px}
+.section{display:none}.section.active{display:block}
+
+/* Filters */
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:20px;align-items:center}
+.filter-btn{padding:6px 14px;border-radius:20px;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:13px;transition:all 0.2s;font-family:inherit}
+.filter-btn.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+.filters-label{font-size:12px;color:var(--muted);margin-right:4px}
+
+/* Cards */
+.cards-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:16px}
+.card{background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08);transition:transform 0.18s,box-shadow 0.18s;cursor:default}
+.card:hover{transform:translateY(-3px);box-shadow:0 4px 16px rgba(0,0,0,0.12)}
+.card-photo{height:130px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.card-photo img{width:100%;height:100%;object-fit:cover}
+.card-photo .no-photo{font-size:44px;opacity:0.3}
+.card-body{padding:14px}
+.card-name{font-size:14px;font-weight:700;margin-bottom:8px;line-height:1.4}
+.card-tags{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.tag{padding:2px 8px;border-radius:4px;font-size:11px;font-weight:600}
+.tag-company{background:#e8f0fe;color:#1967d2}
+.tag-type{background:#fce8e6;color:#c5221f}
+.tag-size{background:#e6f4ea;color:#137333}
+.card-holder{display:flex;align-items:center;gap:7px;font-size:13px}
+.dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.dot-in{background:var(--green)}.dot-out{background:var(--orange)}
+.holder-name{font-weight:600;color:var(--text)}
+
+/* Form */
+.form-card{background:#fff;border-radius:14px;padding:28px;box-shadow:0 1px 6px rgba(0,0,0,0.08);max-width:520px}
+.form-title{font-size:17px;font-weight:700;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--border)}
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+.form-group select,.form-group input,.form-group textarea{width:100%;padding:10px 13px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:inherit;outline:none;transition:border-color .2s;background:#fff;color:var(--text)}
+.form-group select:focus,.form-group input:focus,.form-group textarea:focus{border-color:var(--accent)}
+.submit-btn{background:var(--accent);color:#fff;border:none;padding:12px;border-radius:8px;font-size:15px;font-weight:700;cursor:pointer;width:100%;font-family:inherit;transition:opacity .2s;margin-top:4px}
+.submit-btn:hover{opacity:.88}.submit-btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* Table */
+.table-wrap{background:#fff;border-radius:14px;overflow:hidden;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
+.table-header{padding:16px 20px;border-bottom:1px solid var(--border);font-size:14px;color:var(--muted)}
+table{width:100%;border-collapse:collapse}
+th{background:var(--primary);color:#fff;padding:11px 16px;text-align:left;font-size:12px;font-weight:700;letter-spacing:.4px}
+td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafafa}
+.action-badge{padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700;display:inline-block}
+.badge-借出{background:#fff3e0;color:#bf360c}
+.badge-歸還{background:#e8f5e9;color:#1b5e20}
+.badge-其他{background:#f5f5f5;color:#616161}
+
+/* Record filters */
+.record-controls{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;align-items:center}
+.record-controls select{padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;background:#fff;outline:none}
+
+/* Modal */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
+.overlay.show{display:flex}
+.modal{background:#fff;border-radius:16px;padding:32px;width:460px;max-width:92vw;box-shadow:0 8px 32px rgba(0,0,0,.2)}
+.modal h2{font-size:18px;margin-bottom:8px}
+.modal-desc{color:var(--muted);font-size:13px;line-height:1.7;margin-bottom:22px}
+.modal-hint{background:#fff8e1;border-radius:8px;padding:12px 14px;font-size:12px;line-height:1.7;color:#795548;margin-bottom:18px}
+.modal-hint code{background:#f5f5f5;padding:1px 5px;border-radius:3px;font-family:monospace;font-size:11px}
+.modal-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:20px}
+.btn-cancel{background:none;border:1px solid var(--border);padding:10px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px}
+.btn-save{background:var(--primary);color:#fff;border:none;padding:10px 20px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600}
+
+/* Toast */
+.toast{position:fixed;bottom:24px;right:24px;padding:13px 20px;border-radius:10px;font-size:14px;z-index:200;opacity:0;transform:translateY(8px);transition:all .28s;pointer-events:none;max-width:320px;line-height:1.5;font-family:inherit}
+.toast.show{opacity:1;transform:translateY(0)}
+.toast-success{background:var(--green);color:#fff}
+.toast-error{background:var(--red);color:#fff}
+.toast-info{background:#333;color:#fff}
+
+/* Loading / Empty */
+.state-box{text-align:center;padding:60px 20px;color:var(--muted)}
+.spinner{display:inline-block;width:32px;height:32px;border:3px solid #eee;border-top-color:var(--accent);border-radius:50%;animation:spin .8s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.state-icon{font-size:36px;margin-bottom:10px}
+.empty-text{font-size:14px}
+
+/* CORS warning */
+.cors-warn{background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:16px 18px;margin-bottom:24px;font-size:13px;line-height:1.8;display:none}
+.cors-warn.show{display:block}
+.cors-warn strong{color:#856404}
+.cors-warn code{background:#f8f8f8;padding:1px 6px;border-radius:3px;font-family:monospace;font-size:12px}
+
+/* Password gate */
+#pw-gate{position:fixed;inset:0;background:var(--primary);z-index:999;display:flex;align-items:center;justify-content:center}
+#pw-gate.hidden{display:none}
+.pw-box{background:#fff;border-radius:20px;padding:40px 36px;width:360px;max-width:90vw;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,.35)}
+.pw-logo{font-size:48px;margin-bottom:12px}
+.pw-title{font-size:20px;font-weight:700;margin-bottom:6px;color:var(--primary)}
+.pw-sub{font-size:13px;color:var(--muted);margin-bottom:28px}
+.pw-input{width:100%;padding:12px 16px;border:1.5px solid var(--border);border-radius:10px;font-size:15px;font-family:inherit;outline:none;text-align:center;letter-spacing:2px;transition:border-color .2s}
+.pw-input:focus{border-color:var(--primary)}
+.pw-btn{width:100%;margin-top:14px;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;transition:opacity .2s}
+.pw-btn:hover{opacity:.88}
+.pw-err{color:var(--red);font-size:13px;margin-top:10px;min-height:18px}
+
+@media(max-width:600px){
+  .content{padding:16px 14px}
+  .cards-grid{grid-template-columns:1fr 1fr}
+  .form-card{padding:20px}
+  th,td{padding:10px 12px}
+}
+</style>
+</head>
+<body>
+
+<!-- Password Gate -->
+<div id="pw-gate">
+  <div class="pw-box">
+    <div class="pw-logo">🔏</div>
+    <div class="pw-title">印鑑管理系統</div>
+    <div class="pw-sub">請輸入公司密碼以繼續</div>
+    <input type="password" id="pw-input" class="pw-input" placeholder="密碼" autocomplete="off"
+      onkeydown="if(event.key==='Enter')checkPw()">
+    <button class="pw-btn" onclick="checkPw()">進入系統</button>
+    <div class="pw-err" id="pw-err"></div>
+  </div>
+</div>
+
+<div class="header">
+  <h1>🔏 印鑑管理系統</h1>
+  <button class="settings-btn" onclick="openSettings()">⚙️ 設定 Token</button>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('overview')">📋 印鑑總覽</div>
+  <div class="tab" onclick="switchTab('borrow')">📤 借出登記</div>
+  <div class="tab" onclick="switchTab('return')">📥 歸還登記</div>
+  <div class="tab" onclick="switchTab('history')">📜 使用紀錄</div>
+</div>
+
+<div class="content">
+
+  <!-- CORS 提示 -->
+  <div class="cors-warn" id="cors-warn">
+    <strong>⚠️ 無法連線到 Notion API</strong><br>
+    如果你是直接用瀏覽器開啟 HTML 檔案（<code>file://</code>），請改用本機伺服器開啟：<br>
+    1. 打開終端機，切換到這個 HTML 所在的資料夾<br>
+    2. 執行：<code>python3 -m http.server 8080</code><br>
+    3. 在瀏覽器開啟：<code>http://localhost:8080/印鑑管理系統.html</code>
+  </div>
+
+  <!-- 總覽 -->
+  <div class="section active" id="section-overview">
+    <div class="filters">
+      <span class="filters-label">公司</span>
+      <div id="company-filters">
+        <button class="filter-btn active" onclick="setFilter('')">全部</button>
+      </div>
+    </div>
+    <div id="cards-container">
+      <div class="state-box"><div class="spinner"></div><div class="empty-text">載入中…</div></div>
+    </div>
+  </div>
+
+  <!-- 借出登記 -->
+  <div class="section" id="section-borrow">
+    <div class="form-card">
+      <div class="form-title">📤 借出登記</div>
+      <form id="borrow-form" onsubmit="submitBorrow(event)">
+        <div class="form-group">
+          <label>印鑑 *</label>
+          <select id="borrow-seal" required>
+            <option value="">— 請選擇印鑑 —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>借用人 *</label>
+          <input type="text" id="borrow-person" placeholder="姓名" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>日期 *</label>
+          <input type="date" id="borrow-date" required>
+        </div>
+        <div class="form-group">
+          <label>用途 *</label>
+          <input type="text" id="borrow-purpose" placeholder="例：全家合約用印" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>備註</label>
+          <input type="text" id="borrow-note" autocomplete="off">
+        </div>
+        <button class="submit-btn" type="submit" id="borrow-btn">✅ 確認送出</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 歸還登記 -->
+  <div class="section" id="section-return">
+    <div class="form-card">
+      <div class="form-title">📥 歸還登記</div>
+      <form id="return-form" onsubmit="submitReturn(event)">
+        <div class="form-group">
+          <label>印鑑 *</label>
+          <select id="return-seal" required>
+            <option value="">— 請選擇印鑑 —</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>歸還後保管人 *</label>
+          <input type="text" id="return-holder" value="藝婷" required autocomplete="off">
+        </div>
+        <div class="form-group">
+          <label>日期 *</label>
+          <input type="date" id="return-date" required>
+        </div>
+        <div class="form-group">
+          <label>備註</label>
+          <input type="text" id="return-note" autocomplete="off">
+        </div>
+        <button class="submit-btn" type="submit" id="return-btn">✅ 確認送出</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 使用紀錄 -->
+  <div class="section" id="section-history">
+    <div class="record-controls">
+      <select id="filter-seal" onchange="loadHistory()">
+        <option value="">全部印鑑</option>
+      </select>
+      <select id="filter-action" onchange="loadHistory()">
+        <option value="">全部動作</option>
+        <option value="借出">借出</option>
+        <option value="歸還">歸還</option>
+        <option value="其他">其他</option>
+      </select>
+    </div>
+    <div id="history-container">
+      <div class="state-box"><div class="spinner"></div><div class="empty-text">載入中…</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Settings Modal -->
+<div class="overlay" id="settings-overlay">
+  <div class="modal">
+    <h2>⚙️ 設定 Notion Token</h2>
+    <p class="modal-desc">輸入你的 Notion Internal Integration Token，Token 僅存在瀏覽器本機，不會外傳。</p>
+    <div class="modal-hint">
+      <strong>如何取得 Token：</strong><br>
+      1. 開啟 <code>notion.so/my-integrations</code><br>
+      2. 點「+ 新增整合」→ 建立後複製 Secret<br>
+      3. 到 Notion 印鑑管理頁面，右上角「…」→「連結」→ 加入此整合
+    </div>
+    <div class="form-group">
+      <label>Integration Token</label>
+      <input type="password" id="token-input" placeholder="secret_xxxxxxxxxxxxxxx" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeSettings()">取消</button>
+      <button class="btn-save" onclick="saveToken()">儲存並連線</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'https://api.notion.com/v1';
+const DB_SEALS = '6cf3560fb1d0446893c6b9e61ba5df52';
+const DB_LOG   = '0fa20e12642c4e12a9c17d100c10caa9';
+const VER = '2022-06-28';
+
+// Notion SELECT options for 保管人
+const HOLDER_OPTIONS = ['藝婷','溫蒂','X','連','Ｘ','凱莉','郭佑','Leona'];
+
+let seals = [];
+let currentFilter = '';
+let toastTimer;
+
+// ── Helpers ──────────────────────────────────────────────────
+function token() { return localStorage.getItem('notion_token') || ''; }
+
+function hdrs() {
+  return {
+    'Authorization': `Bearer ${token()}`,
+    'Notion-Version': VER,
+    'Content-Type': 'application/json',
+  };
+}
+
+async function queryDB(dbId, filter, sorts) {
+  const body = { page_size: 100 };
+  if (filter) body.filter = filter;
+  if (sorts)  body.sorts  = sorts;
+  const r = await fetch(`${API}/databases/${dbId}/query`, {
+    method: 'POST', headers: hdrs(), body: JSON.stringify(body)
+  });
+  if (!r.ok) throw new Error(`Notion API ${r.status}`);
+  return r.json();
+}
+
+async function createPage(dbId, props) {
+  const r = await fetch(`${API}/pages`, {
+    method: 'POST', headers: hdrs(),
+    body: JSON.stringify({ parent: { database_id: dbId }, properties: props })
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || `API ${r.status}`); }
+  return r.json();
+}
+
+async function updatePage(pageId, props) {
+  const r = await fetch(`${API}/pages/${pageId}`, {
+    method: 'PATCH', headers: hdrs(),
+    body: JSON.stringify({ properties: props })
+  });
+  if (!r.ok) { const e = await r.json(); throw new Error(e.message || `API ${r.status}`); }
+  return r.json();
+}
+
+function getProp(page, key) {
+  const p = page.properties[key];
+  if (!p) return '';
+  if (p.type === 'title')     return p.title.map(t => t.plain_text).join('');
+  if (p.type === 'rich_text') return p.rich_text.map(t => t.plain_text).join('');
+  if (p.type === 'select')    return p.select?.name || '';
+  if (p.type === 'date')      return p.date?.start || '';
+  return '';
+}
+
+function getPhotos(page) {
+  const p = page.properties['照片'];
+  if (!p?.files) return [];
+  return p.files.map(f => f.type === 'file' ? f.file.url : f.external?.url).filter(Boolean);
+}
+
+function today() { return new Date().toISOString().split('T')[0]; }
+
+function toast(msg, type = 'info') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast toast-${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3500);
+}
+
+// ── Tabs ─────────────────────────────────────────────────────
+const TAB_IDS = ['overview','borrow','return','history'];
+
+function switchTab(name) {
+  document.querySelectorAll('.tab').forEach((el, i) =>
+    el.classList.toggle('active', TAB_IDS[i] === name));
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.getElementById(`section-${name}`).classList.add('active');
+  if (name === 'history') loadHistory();
+}
+
+// ── Overview ──────────────────────────────────────────────────
+function setFilter(company) {
+  currentFilter = company;
+  document.querySelectorAll('.filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.val === company));
+  renderCards();
+}
+
+function renderCards() {
+  const data = currentFilter ? seals.filter(s => getProp(s, '公司別') === currentFilter) : seals;
+  const el = document.getElementById('cards-container');
+
+  if (!data.length) {
+    el.innerHTML = '<div class="state-box"><div class="state-icon">📭</div><div class="empty-text">沒有資料</div></div>';
+    return;
+  }
+
+  el.innerHTML = `<div class="cards-grid">${data.map(s => {
+    const name    = getProp(s, '印鑑名稱');
+    const company = getProp(s, '公司別');
+    const type    = getProp(s, '類別');
+    const size    = getProp(s, '大小');
+    const holder  = getProp(s, '保管人');
+    const photos  = getPhotos(s);
+    const isAway  = holder && holder !== '藝婷';
+
+    const photoHtml = photos.length
+      ? `<img src="${photos[0]}" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+        + `<div class="no-photo" style="display:none;width:100%;height:100%;align-items:center;justify-content:center;font-size:44px;opacity:.25">🔏</div>`
+      : `<div class="no-photo">🔏</div>`;
+
+    return `<div class="card">
+      <div class="card-photo">${photoHtml}</div>
+      <div class="card-body">
+        <div class="card-name">${name}</div>
+        <div class="card-tags">
+          ${company ? `<span class="tag tag-company">${company}</span>` : ''}
+          ${type    ? `<span class="tag tag-type">${type}</span>` : ''}
+          ${size    ? `<span class="tag tag-size">${size}</span>` : ''}
+        </div>
+        <div class="card-holder">
+          <div class="dot ${isAway ? 'dot-out' : 'dot-in'}"></div>
+          <span class="holder-name">${holder || '—'}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+async function loadSeals() {
+  if (!token()) { openSettings(); return; }
+  document.getElementById('cards-container').innerHTML =
+    '<div class="state-box"><div class="spinner"></div><div class="empty-text">載入中…</div></div>';
+  document.getElementById('cors-warn').classList.remove('show');
+
+  try {
+    const data = await queryDB(DB_SEALS, null, [{ property: '公司別', direction: 'ascending' }]);
+    seals = data.results;
+
+    // Company filter buttons
+    const companies = [...new Set(seals.map(s => getProp(s, '公司別')).filter(Boolean))];
+    document.getElementById('company-filters').innerHTML =
+      `<button class="filter-btn active" data-val="" onclick="setFilter('')">全部</button>`
+      + companies.map(c =>
+          `<button class="filter-btn" data-val="${c}" onclick="setFilter('${c}')">${c}</button>`
+        ).join('');
+
+    // Populate selects
+    const opts = seals.map(s => {
+      const n = getProp(s, '印鑑名稱');
+      const c = getProp(s, '公司別');
+      return `<option value="${s.id}" data-name="${n}">${c ? `[${c}] ` : ''}${n}</option>`;
+    }).join('');
+
+    ['borrow-seal','return-seal','filter-seal'].forEach(id => {
+      const el = document.getElementById(id);
+      const isFilter = id === 'filter-seal';
+      el.innerHTML = `<option value="">${isFilter ? '全部印鑑' : '— 請選擇印鑑 —'}</option>${opts}`;
+    });
+
+    renderCards();
+  } catch (e) {
+    const isCors = e.message.includes('Failed to fetch') || e.message.includes('NetworkError');
+    if (isCors) document.getElementById('cors-warn').classList.add('show');
+    document.getElementById('cards-container').innerHTML =
+      `<div class="state-box"><div class="state-icon">⚠️</div><div class="empty-text">${isCors ? '網路連線失敗（見上方提示）' : e.message}</div></div>`;
+    toast('載入失敗：' + e.message, 'error');
+  }
+}
+
+// ── Borrow ────────────────────────────────────────────────────
+async function submitBorrow(e) {
+  e.preventDefault();
+  const sealId   = document.getElementById('borrow-seal').value;
+  const sealName = document.getElementById('borrow-seal').selectedOptions[0]?.dataset.name || '';
+  const person   = document.getElementById('borrow-person').value.trim();
+  const date     = document.getElementById('borrow-date').value;
+  const purpose  = document.getElementById('borrow-purpose').value.trim();
+  const note     = document.getElementById('borrow-note').value.trim();
+
+  const btn = document.getElementById('borrow-btn');
+  btn.disabled = true; btn.textContent = '送出中…';
+
+  try {
+    await createPage(DB_LOG, {
+      '紀錄名稱': { title:     [{ text: { content: `${sealName} 借出 → ${person}` } }] },
+      '印鑑':     { relation:  [{ id: sealId }] },
+      '動作':     { select:    { name: '借出' } },
+      '日期':     { date:      { start: date } },
+      '操作人':   { rich_text: [{ text: { content: person  } }] },
+      '用途':     { rich_text: [{ text: { content: purpose } }] },
+      '備註':     { rich_text: [{ text: { content: note    } }] },
+    });
+
+    if (HOLDER_OPTIONS.includes(person)) {
+      await updatePage(sealId, { '保管人': { select: { name: person } } });
+    }
+
+    toast(`✅ 已登記：${sealName} 借出給 ${person}`, 'success');
+    document.getElementById('borrow-form').reset();
+    document.getElementById('borrow-date').value = today();
+    await loadSeals();
+  } catch(err) {
+    toast('送出失敗：' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ 確認送出';
+  }
+}
+
+// ── Return ────────────────────────────────────────────────────
+async function submitReturn(e) {
+  e.preventDefault();
+  const sealId   = document.getElementById('return-seal').value;
+  const sealName = document.getElementById('return-seal').selectedOptions[0]?.dataset.name || '';
+  const holder   = document.getElementById('return-holder').value.trim();
+  const date     = document.getElementById('return-date').value;
+  const note     = document.getElementById('return-note').value.trim();
+
+  const btn = document.getElementById('return-btn');
+  btn.disabled = true; btn.textContent = '送出中…';
+
+  try {
+    await createPage(DB_LOG, {
+      '紀錄名稱': { title:     [{ text: { content: `${sealName} 歸還 → ${holder}` } }] },
+      '印鑑':     { relation:  [{ id: sealId }] },
+      '動作':     { select:    { name: '歸還' } },
+      '日期':     { date:      { start: date } },
+      '操作人':   { rich_text: [{ text: { content: holder } }] },
+      '備註':     { rich_text: [{ text: { content: note   } }] },
+    });
+
+    if (HOLDER_OPTIONS.includes(holder)) {
+      await updatePage(sealId, { '保管人': { select: { name: holder } } });
+    }
+
+    toast(`✅ 已登記：${sealName} 歸還，保管人：${holder}`, 'success');
+    document.getElementById('return-form').reset();
+    document.getElementById('return-holder').value = '藝婷';
+    document.getElementById('return-date').value = today();
+    await loadSeals();
+  } catch(err) {
+    toast('送出失敗：' + err.message, 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '✅ 確認送出';
+  }
+}
+
+// ── History ───────────────────────────────────────────────────
+async function loadHistory() {
+  const el = document.getElementById('history-container');
+  el.innerHTML = '<div class="state-box"><div class="spinner"></div><div class="empty-text">載入中…</div></div>';
+
+  const sealId = document.getElementById('filter-seal').value;
+  const action = document.getElementById('filter-action').value;
+
+  const conditions = [];
+  if (sealId)  conditions.push({ property: '印鑑',  relation: { contains: sealId } });
+  if (action)  conditions.push({ property: '動作',  select:   { equals:   action } });
+  const filter = conditions.length === 0 ? undefined
+               : conditions.length === 1 ? conditions[0]
+               : { and: conditions };
+
+  try {
+    const data = await queryDB(DB_LOG, filter, [{ property: '日期', direction: 'descending' }]);
+    const records = data.results;
+
+    if (!records.length) {
+      el.innerHTML = '<div class="state-box"><div class="state-icon">📭</div><div class="empty-text">沒有紀錄</div></div>';
+      return;
+    }
+
+    el.innerHTML = `<div class="table-wrap">
+      <div class="table-header">共 ${records.length} 筆紀錄</div>
+      <table>
+        <thead><tr>
+          <th>日期</th><th>印鑑</th><th>動作</th><th>操作人</th><th>用途</th><th>備註</th>
+        </tr></thead>
+        <tbody>${records.map(r => `<tr>
+          <td>${getProp(r,'日期')}</td>
+          <td>${getProp(r,'紀錄名稱')}</td>
+          <td><span class="action-badge badge-${getProp(r,'動作')}">${getProp(r,'動作')}</span></td>
+          <td>${getProp(r,'操作人')}</td>
+          <td>${getProp(r,'用途')}</td>
+          <td>${getProp(r,'備註')}</td>
+        </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  } catch(err) {
+    el.innerHTML = `<div class="state-box"><div class="state-icon">⚠️</div><div class="empty-text">${err.message}</div></div>`;
+  }
+}
+
+// ── Settings ──────────────────────────────────────────────────
+function openSettings() {
+  document.getElementById('token-input').value = token();
+  document.getElementById('settings-overlay').classList.add('show');
+}
+function closeSettings() {
+  document.getElementById('settings-overlay').classList.remove('show');
+}
+function saveToken() {
+  const t = document.getElementById('token-input').value.trim();
+  if (!t) { toast('請輸入 Token', 'error'); return; }
+  localStorage.setItem('notion_token', t);
+  closeSettings();
+  toast('Token 已儲存，連線中…', 'info');
+  loadSeals();
+}
+
+// ── Password Gate ─────────────────────────────────────────────
+const PW = 'Passmiraclex';
+
+function checkPw() {
+  const val = document.getElementById('pw-input').value;
+  if (val === PW) {
+    sessionStorage.setItem('mx_auth', '1');
+    document.getElementById('pw-gate').classList.add('hidden');
+    initApp();
+  } else {
+    document.getElementById('pw-err').textContent = '密碼錯誤，請再試一次';
+    document.getElementById('pw-input').value = '';
+    document.getElementById('pw-input').focus();
+  }
+}
+
+// ── Init ──────────────────────────────────────────────────────
+function initApp() {
+  document.getElementById('borrow-date').value = today();
+  document.getElementById('return-date').value = today();
+  if (!token()) {
+    setTimeout(openSettings, 400);
+  } else {
+    loadSeals();
+  }
+}
+
+if (sessionStorage.getItem('mx_auth') === '1') {
+  document.getElementById('pw-gate').classList.add('hidden');
+  initApp();
+} else {
+  setTimeout(() => document.getElementById('pw-input').focus(), 100);
+}
+</script>
+</body>
+</html>
